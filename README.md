@@ -2,7 +2,7 @@
 
 > A native macOS floating widget for monitoring your Command Code API usage in real time.
 
-Built with SwiftUI, inspired by Apple Screen Time's clean aesthetics. Glass-morphism, per-model bar charts, zero Xcode required.
+Built with SwiftUI, inspired by Apple Screen Time's clean aesthetics. Glass-morphism, per-model bar charts, no Xcode required.
 
 ![screenshot](screenshot.jpg)
 
