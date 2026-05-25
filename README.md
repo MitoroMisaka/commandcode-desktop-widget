@@ -1,45 +1,45 @@
 # Command Code Desktop Widget
 
-> macOS 桌面悬浮窗，实时监控你的 Command Code API 用量。
+> A native macOS floating widget for monitoring your Command Code API usage in real time.
 
-一个原生 SwiftUI 编写的纯玻璃质感小部件，贴在桌面上显示你的 token 消耗、费用和模型使用分布。灵感来自 Apple Screen Time 的简洁设计。
+Built with SwiftUI, inspired by Apple Screen Time's clean aesthetics. Glass-morphism, per-model bar charts, zero Xcode required.
 
 ![screenshot](screenshot.jpg)
 
-## 功能
+## Features
 
-- **实时用量监控** — Cost / Tokens / Runs / Success Rate 一目了然
-- **模型分色柱状图** — DeepSeek-V4-Pro、DeepSeek-V4-Flash、K2.5、K2.6、MiniMax，各色一根柱子
-- **Hover tooltip** — 悬停柱子查看该小时各模型详细用量
-- **玻璃材质** — ultraThinMaterial（桌面/玻璃质感）+ regularMaterial（点击时不透明）
-- **拖拽吸附** — 24px 网格对齐，拖动时有白色高亮框提示
-- **右键菜单** — 刷新数据 / 退出
-- **自动刷新** — 每 30 分钟 + 回到桌面自动刷新
-- **余额显示** — 绿色/橙色指示灯 < $1
+- **Usage at a glance** — Total Cost / Tokens / Runs / Success Rate
+- **Per-model breakdown** — DeepSeek-V4-Pro, DeepSeek-V4-Flash, K2.5, K2.6, MiniMax, each with a distinct color
+- **Hover tooltips** — See per-model detail per hour by hovering over a bar
+- **Glass materials** — ultraThinMaterial (when idle) / regularMaterial (when focused)
+- **Drag snapping** — 24px grid alignment with a white highlight border during drag
+- **Right-click menu** — Refresh data / Quit
+- **Auto refresh** — Every 30 minutes + on returning to desktop
+- **Credit indicator** — Green/orange dot shows if monthly credits are above/below $1
 
-## 系统要求
+## Requirements
 
 - macOS 26+
-- Firefox 浏览器（需已登录 [commandcode.ai](https://commandcode.ai)）
-- Xcode Command Line Tools（`swiftc`）
+- Firefox (logged into [commandcode.ai](https://commandcode.ai))
+- Xcode Command Line Tools (`swiftc`)
 
-## 快速开始
+## Quick Start
 
 ```bash
-# 1. Clone
+# Clone
 git clone https://github.com/MitoroMisaka/commandcode-desktop-widget.git
 cd commandcode-desktop-widget
 
-# 2. Build
+# Build
 ./build.sh
 
-# 3. Launch
+# Launch
 open .build/CC.app
 ```
 
-## 构建
+## Build
 
-不需要 Xcode GUI，纯 `swiftc` 命令行：
+No Xcode GUI needed — pure `swiftc`:
 
 ```bash
 swiftc -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
@@ -53,45 +53,45 @@ swiftc -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
   Sources/App.swift
 ```
 
-## 工作原理
+## How It Works
 
-### 数据来源
+### Data Source
 
-Widget 从 Command Code 的内部 API 拉取数据，这些端点同样被 [commandcode.ai/studio](https://commandcode.ai/studio) 使用：
+The widget pulls from Command Code's internal API — the same endpoints used by [commandcode.ai/studio](https://commandcode.ai/studio):
 
-| 端点 | 内容 |
-|------|------|
-| `/internal/usage/summary` | 总用量摘要（cost/tokens/runs/successRate） |
-| `/internal/usage/charts` | 按小时分桶的逐模型用量数据 |
-| `/internal/billing/credits` | 月末余额 |
+| Endpoint | What |
+|----------|------|
+| `/internal/usage/summary` | Aggregate usage (cost, tokens, runs, success rate) |
+| `/internal/usage/charts` | Per-hour, per-model usage buckets |
+| `/internal/billing/credits` | Monthly credit balance |
 
-### Cookie 认证
+### Authentication
 
-Widget 自动从 Firefox 的 cookie 数据库读取会话 token。确保 Firefox 已登录 `commandcode.ai`。
+The widget reads your session token from Firefox's cookie database. Make sure Firefox is logged into `commandcode.ai`.
 
-默认 Firefox profile 为 `7wpm1h7n.default-release`——如果不同，请修改 `Sources/TokenExtractor.swift` 的 `dbPath`：
+The default Firefox profile is `7wpm1h7n.default-release` — update `dbPath` in `Sources/TokenExtractor.swift` if yours differs:
 
 ```swift
-static let dbPath = NSHomeDirectory() + "/Library/Application Support/Firefox/Profiles/<你的profile>/cookies.sqlite"
+static let dbPath = NSHomeDirectory() + "/Library/Application Support/Firefox/Profiles/<your-profile>/cookies.sqlite"
 ```
 
-### 显示逻辑
+### Display Logic
 
-- API 返回的 UTC 时间戳自动转换为 JST（东九区）显示
-- 柱状图最多显示最近 10 个小时的数据
-- 数据按模型分色堆叠，悬停查看详细分布
+- UTC timestamps from the API are converted to JST (Asia/Tokyo) for display
+- The bar chart shows the 10 most recent hours
+- Bars are stacked by model, colored accordingly — hover for details
 
-## 同类项目对比
+## Similar Projects
 
-| 项目 | 平台 | 目标服务 |
-|------|------|----------|
-| `chillikai/claude-usage-widget` | macOS 菜单栏 | Claude API |
-| `croustibat/ClaudeWidget` | macOS 桌面 | Claude API |
-| `lkltxwd001/deepseek-desktop-widget` | macOS 桌面 | DeepSeek API |
-| **本项目** | macOS 桌面 | **Command Code** |
+| Project | Platform | Service |
+|---------|----------|---------|
+| `chillikai/claude-usage-widget` | macOS Menubar | Claude API |
+| `croustibat/ClaudeWidget` | macOS Desktop | Claude API |
+| `lkltxwd001/deepseek-desktop-widget` | macOS Desktop | DeepSeek API |
+| **This project** | macOS Desktop | **Command Code** |
 
-这是首个 Command Code 桌面用量监控工具。
+This is the first desktop usage monitor for Command Code.
 
-## 许可证
+## License
 
 MIT
