@@ -24,7 +24,7 @@ class DataFetcher: ObservableObject {
     private func fetch() async {
         guard !loading else { return }
         loading = true; error = nil
-        guard let tok = TokenExtractor.extract() else { error = "请登录 Firefox → Command Code"; loading = false; return }
+        guard let tok = await TokenExtractor.extract() else { error = "请登录 Firefox → Command Code"; loading = false; return }
         
         struct CR: Codable { let data: [ChartBucket] }
         
