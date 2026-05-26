@@ -66,7 +66,10 @@ func aggregateHourly(_ buckets: [ChartBucket]) -> [HourBucket] {
         if gap > bestGap { bestGap = gap; splitIdx = i }
     }
     
-    if bestGap > 1 {
+    // Only rotate when gap is large enough to indicate a day boundary
+    // (e.g. 23 → 0 = -23 diff, or 22 → 1 = 3). Small holes in consecutive
+    // data (15→17 gap=2) should NOT trigger a split.
+    if bestGap >= 6 {
         let tail = Array(numeric[...splitIdx])
         let head = Array(numeric[(splitIdx + 1)...])
         return head + tail
