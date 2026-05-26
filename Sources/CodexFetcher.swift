@@ -22,6 +22,7 @@ enum CodexFetcher {
         func cancelTimeout() {
             lock.lock(); defer { lock.unlock() }
             timeoutWorkItem?.cancel()
+            timeoutWorkItem = nil  // break retain cycle
         }
         func storeTimeout(_ item: DispatchWorkItem) {
             lock.lock(); defer { lock.unlock() }
@@ -110,6 +111,21 @@ enum CodexFetcher {
                 parseAndFinish()
             }
 
+            // ── Process termination (set before run to cover all exit paths) ──
+
+            process.terminationHandler = { proc in
+                parseAndFinish()
+                if !state.isResumed() {
+                    let reason: String
+                    if proc.terminationStatus != 0 {
+                        reason = "Codex exited with status \(proc.terminationStatus)"
+                    } else {
+                        reason = "Codex exited without valid response"
+                    }
+                    finish(CodexStatus.failed(reason))
+                }
+            }
+
             // ── Launch ───────────────────────────────────────────
 
             do {
@@ -142,21 +158,6 @@ enum CodexFetcher {
             }
             state.storeTimeout(workItem)
             DispatchQueue.global().asyncAfter(deadline: .now() + 10, execute: workItem)
-
-            // ── Process termination ──────────────────────────────
-
-            process.terminationHandler = { proc in
-                parseAndFinish()
-                if !state.isResumed() {
-                    let reason: String
-                    if proc.terminationStatus != 0 {
-                        reason = "Codex exited with status \(proc.terminationStatus)"
-                    } else {
-                        reason = "Codex exited without valid response"
-                    }
-                    finish(CodexStatus.failed(reason))
-                }
-            }
         }
     }
 }
