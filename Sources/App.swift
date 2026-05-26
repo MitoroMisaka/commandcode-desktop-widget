@@ -10,8 +10,8 @@ func shortName(_ m: String) -> String {
     let l = m.lowercased()
     if l.contains("deepseek-v4-pro")  { return "DeepSeek-V4-Pro" }
     if l.contains("deepseek-v4-flash") { return "DeepSeek-V4-Flash" }
-    if l.contains("kimi-k2.5")         { return "K2.5" }
-    if l.contains("kimi-k2.6")         { return "K2.6" }
+    if l.contains("kimi-k2.5")         { return "Kimi-K2.5" }
+    if l.contains("kimi-k2.6")         { return "Kimi-K2.6" }
     if l.contains("minimax")           { return "MiniMax" }
     return m
 }
