@@ -25,7 +25,6 @@ struct BarChartView: View {
     
     private var sampled: [HourBucket] {
         let ct = buckets.count; guard ct > 0 else { return [] }
-        // Always take the latest 10 (already sorted chronologically, so last = most recent)
         let start = max(0, ct - 10)
         return Array(buckets[start..<ct])
     }
@@ -48,12 +47,10 @@ struct BarChartView: View {
     private var chartBody: some View {
         ZStack(alignment: .top) {
             VStack(spacing: 0) {
-                // Bars
                 HStack(alignment: .bottom, spacing: sp) {
                     ForEach(sampled) { b in bar(b) }
                 }.frame(height: mh + 4)
                 
-                // Time labels
                 HStack(spacing: sp) {
                     ForEach(sampled) { b in
                         Text("\(Int(b.hour.split(separator:":").first ?? "0") ?? 0)")
@@ -62,7 +59,6 @@ struct BarChartView: View {
                     }
                 }.padding(.top, 4)
                 
-                // Model list
                 HStack(spacing: 12) {
                     ForEach(allModels, id: \.0) { m in
                         HStack(spacing: 4) {
@@ -131,17 +127,14 @@ struct BarChartView: View {
     }
 }
 
-// MARK: - Content
-
-let kWidgetWidth: CGFloat = 432
-let kWidgetHeight: CGFloat = 300
-
 // MARK: - Window
 
 class WidgetWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 }
+
+// MARK: - Content
 
 struct ContentView: View {
     @EnvironmentObject var fetcher: DataFetcher
@@ -166,11 +159,6 @@ struct ContentView: View {
         .frame(width: 432, height: 300)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(state.focused ? .white.opacity(0.12) : .white.opacity(0.04), lineWidth: 0.5))
-        .contextMenu {
-            Button { fetcher.refresh() } label: { Label("刷新", systemImage: "arrow.clockwise") }
-            Divider()
-            Button(role: .destructive, action: { NSApplication.shared.terminate(nil) }) { Label("退出", systemImage: "xmark.circle") }
-        }
     }
     
     private var header: some View {
@@ -268,6 +256,15 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
         let host = NSHostingView(rootView: view); host.frame.size = sz
         host.autoresizingMask = [.width, .height]; win.contentView = host
         host.wantsLayer = true; host.layer?.cornerRadius = 22; host.layer?.masksToBounds = true
+        
+        // Native NSMenu — more reliable than SwiftUI .contextMenu on borderless windows.
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "刷新", action: #selector(menuRefresh), keyEquivalent: ""))
+        menu.addItem(.separator())
+        let q = NSMenuItem(title: "退出", action: #selector(menuQuit), keyEquivalent: "q")
+        q.keyEquivalentModifierMask = []
+        menu.addItem(q)
+        host.menu = menu
         
         if let scr = NSScreen.main {
             let sf = scr.visibleFrame
