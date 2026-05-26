@@ -6,6 +6,7 @@ class DataFetcher: ObservableObject {
     @Published var hourly: [HourBucket] = []
     @Published var summary: SummaryResp?
     @Published var credits: CreditsResp.C2?
+    @Published var codexStatus: CodexStatus?
     @Published var loading = false
     @Published var error: String?
     private var timer: Timer?
@@ -41,6 +42,14 @@ class DataFetcher: ObservableObject {
         loading = true; error = nil
         // defer guarantees loading=false even on cancellation/timeout.
         defer { loading = false }
+        
+        // Start Codex fetch in parallel (decoupled from CC data)
+        Task.detached {
+            let codexResult = await CodexFetcher.fetch()
+            await MainActor.run {
+                self.codexStatus = codexResult ?? CodexStatus.failed("获取失败")
+            }
+        }
         
         guard let tok = await TokenExtractor.extract() else {
             error = "请登录 Firefox → Command Code"; return
