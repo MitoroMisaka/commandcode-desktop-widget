@@ -10,6 +10,7 @@ class DataFetcher: ObservableObject {
     @Published var loading = false
     @Published var error: String?
     private var timer: Timer?
+    private var codexTask: Task<Void, Never>?
     
     private static let session: URLSession = {
         let c = URLSessionConfiguration.default
@@ -43,9 +44,12 @@ class DataFetcher: ObservableObject {
         // defer guarantees loading=false even on cancellation/timeout.
         defer { loading = false }
         
-        // Start Codex fetch in parallel (decoupled from CC data)
-        Task.detached {
+        // Start Codex fetch in parallel (decoupled from CC data).
+        // Cancel any in-flight Codex fetch and use [weak self] to match project pattern.
+        codexTask?.cancel()
+        codexTask = Task.detached { [weak self] in
             let codexResult = await CodexFetcher.fetch()
+            guard let self else { return }
             await MainActor.run {
                 self.codexStatus = codexResult ?? CodexStatus.failed("获取失败")
             }
