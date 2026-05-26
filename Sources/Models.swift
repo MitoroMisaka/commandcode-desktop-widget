@@ -121,7 +121,8 @@ struct CodexStatus {
 
     static func from(rpcResult: CodexInitResult) -> CodexStatus {
         let account = rpcResult.account
-        let plan = account.planType.prefix(1).uppercased() + account.planType.dropFirst()
+        let plan: String? = account.planType.isEmpty ? nil
+            : account.planType.prefix(1).uppercased() + account.planType.dropFirst()
 
         let primary = account.rateLimits["primary"]
         let secondary = account.rateLimits["secondary"]
