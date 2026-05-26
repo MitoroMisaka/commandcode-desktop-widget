@@ -96,19 +96,20 @@ func colorFor(_ i: Int) -> (Double,Double,Double) {
 
 // MARK: - Codex
 
-struct CodexRateLimit: Codable {
+struct CodexRateLimitBucket: Codable {
     let usedPercent: Double
-    let resetsAt: String
+    let windowDurationMins: Int
+    let resetsAt: Int  // Unix timestamp (seconds)
 }
 
-struct CodexAccount: Codable {
-    let rateLimits: [String: CodexRateLimit]
+struct CodexRateLimits: Codable {
+    let primary: CodexRateLimitBucket
+    let secondary: CodexRateLimitBucket
     let planType: String
-    let credits: Int?
 }
 
-struct CodexInitResult: Codable {
-    let account: CodexAccount
+struct CodexRPCResult: Codable {
+    let rateLimits: CodexRateLimits
 }
 
 struct CodexStatus {
@@ -119,22 +120,13 @@ struct CodexStatus {
     let secondaryReset: String?
     let error: String?
 
-    static func from(rpcResult: CodexInitResult) -> CodexStatus {
-        let account = rpcResult.account
-        let plan: String? = account.planType.isEmpty ? nil
-            : account.planType.prefix(1).uppercased() + account.planType.dropFirst()
+    static func from(rateLimits: CodexRateLimits) -> CodexStatus {
+        let plan: String? = rateLimits.planType.isEmpty ? nil
+            : rateLimits.planType.prefix(1).uppercased() + rateLimits.planType.dropFirst()
 
-        let primary = account.rateLimits["primary"]
-        let secondary = account.rateLimits["secondary"]
-
-        func countdown(from isoString: String?) -> String? {
-            guard let isoString else { return nil }
-            let fmt = ISO8601DateFormatter()
-            fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            let resetDate = fmt.date(from: isoString)
-                ?? ISO8601DateFormatter().date(from: isoString)
-            guard let resetDate else { return nil }
-            let remaining = resetDate.timeIntervalSinceNow
+        func countdown(from unixTimestamp: Int) -> String {
+            let reset = Date(timeIntervalSince1970: TimeInterval(unixTimestamp))
+            let remaining = reset.timeIntervalSinceNow
             guard remaining > 0 else { return "0m" }
             let hours = remaining / 3600
             if hours >= 1 {
@@ -147,10 +139,10 @@ struct CodexStatus {
 
         return CodexStatus(
             planName: plan,
-            primaryPercent: primary?.usedPercent,
-            primaryReset: countdown(from: primary?.resetsAt),
-            secondaryPercent: secondary?.usedPercent,
-            secondaryReset: countdown(from: secondary?.resetsAt),
+            primaryPercent: rateLimits.primary.usedPercent,
+            primaryReset: countdown(from: rateLimits.primary.resetsAt),
+            secondaryPercent: rateLimits.secondary.usedPercent,
+            secondaryReset: countdown(from: rateLimits.secondary.resetsAt),
             error: nil
         )
     }
