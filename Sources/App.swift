@@ -326,8 +326,9 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
         let host = NSHostingView(rootView: view); host.frame.size = sz
         host.autoresizingMask = [.width, .height]; win.contentView = host
         host.wantsLayer = true; host.layer?.cornerRadius = 22; host.layer?.masksToBounds = true
-        
-        // Native right-click menu via NSView.menu — direct AppKit, no SwiftUI.
+
+        // Right-click menu via local event monitor.
+        // NSView.menu does not reliably fire on NSHostingView at desktop-icon window level.
         let menu = NSMenu()
         let refreshItem = NSMenuItem(title: "刷新", action: #selector(menuRefresh), keyEquivalent: "")
         refreshItem.target = self
@@ -337,8 +338,12 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
         quitItem.keyEquivalentModifierMask = []
         quitItem.target = self
         menu.addItem(quitItem)
-        host.menu = menu
-        
+        _ = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
+            guard let self, let w = self.ww, event.window === w else { return event }
+            menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+            return nil
+        }
+
         if let scr = NSScreen.main {
             let sf = scr.visibleFrame
             win.setFrameOrigin(NSPoint(x: round(sf.maxX - sz.width - 24), y: round(sf.maxY - sz.height - 24)))
