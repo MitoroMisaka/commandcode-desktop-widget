@@ -9,9 +9,7 @@ class DataFetcher: ObservableObject {
     @Published var loading = false
     @Published var error: String?
     private var timer: Timer?
-    private var fetchTask: Task<Void, Never>?
     
-    /// Quick-connect URLSession: 15s request timeout, 30s total, 10s connect.
     private static let session: URLSession = {
         let c = URLSessionConfiguration.default
         c.timeoutIntervalForRequest = 15
@@ -26,40 +24,33 @@ class DataFetcher: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 30*60, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
-        // Debounced: avoid stacking refreshes on rapid focus switches
         var pending: Task<Void, Never>?
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             pending?.cancel()
             pending = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s debounce
+                try? await Task.sleep(nanoseconds: 500_000_000)
                 self?.refresh()
             }
         }
     }
-    func stop() { timer?.invalidate(); fetchTask?.cancel() }
-    func refresh() {
-        fetchTask?.cancel()
-        fetchTask = Task { await fetch() }
-    }
+    func stop() { timer?.invalidate() }
+    func refresh() { Task { await fetch() } }
     
     private func fetch() async {
         guard !loading else { return }
         loading = true; error = nil
+        // defer guarantees loading=false even on cancellation/timeout.
+        defer { loading = false }
         
         guard let tok = await TokenExtractor.extract() else {
-            error = "请登录 Firefox → Command Code"; loading = false; return
+            error = "请登录 Firefox → Command Code"; return
         }
         
-        // Wrap fetchData in a timeout to avoid 3+ minute hangs on flaky networks.
-        let result = await withTimeout(25) { [tok] in
-            await self.fetchData(tok)
-        }
-        
-        if Task.isCancelled { loading = false; return }
+        let result = await withTimeout(25) { await self.fetchData(tok) }
+        if Task.isCancelled { return }
         
         switch result {
-        case .timeout:
-            error = "网络超时"
+        case .timeout: error = "网络超时"
         case .success(let (h, s, c)):
             if let h = h { hourly = h }
             if let s = s { summary = s }
@@ -67,11 +58,8 @@ class DataFetcher: ObservableObject {
         }
         
         try? await Task.sleep(nanoseconds: 600_000_000)
-        if Task.isCancelled { return }
-        loading = false
     }
     
-    /// Network fetches off the main actor.
     private nonisolated func fetchData(_ tok: String) async -> ([HourBucket]?, SummaryResp?, CreditsResp.C2?) {
         struct CR: Codable { let data: [ChartBucket] }
         async let c: CR? = get("https://api.commandcode.ai/internal/usage/charts", tok)
