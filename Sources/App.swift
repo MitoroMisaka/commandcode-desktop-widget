@@ -133,6 +133,16 @@ struct BarChartView: View {
 
 // MARK: - Content
 
+let kWidgetWidth: CGFloat = 432
+let kWidgetHeight: CGFloat = 300
+
+// MARK: - Window
+
+class WidgetWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
 struct ContentView: View {
     @EnvironmentObject var fetcher: DataFetcher
     @EnvironmentObject var state: WidgetState
@@ -245,7 +255,7 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         let sz = CGSize(width: 432, height: 300)
-        let win = NSWindow(contentRect: NSRect(origin: .zero, size: sz),
+        let win = WidgetWindow(contentRect: NSRect(origin: .zero, size: sz),
                            styleMask: [.borderless, .fullSizeContentView],
                            backing: .buffered, defer: false)
         win.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
