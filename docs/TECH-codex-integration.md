@@ -46,30 +46,25 @@ codex app-server (stdin)  ──JSON-RPC──>  CodexFetcher (readabilityHandle
 
 进程: `/Applications/Codex.app/Contents/Resources/codex app-server`
 
-### Request (→ stdin)
+**双请求序列**（不能关闭 stdin，两轮通信）：
 
-```json
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"0.2.0"}}
+### Step 1: initialize
+
+```
+→ {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"0.2.0","clientInfo":{"name":"CommandCodeWidget","version":"1.0.0"}}}
+← {"id":1,"result":{"userAgent":"CommandCodeWidget/...","codexHome":"~/.codex","platformFamily":"unix","platformOs":"macos"}}
 ```
 
-### Response (← stdout)
+**注意**: `clientInfo` 是必填字段，缺少会返回 `-32600` 错误。
 
-```json
-{
-  "jsonrpc":"2.0",
-  "id":1,
-  "result":{
-    "account": {
-      "rateLimits": {
-        "primary":   {"usedPercent":32.5, "resetsAt":"2026-05-26T14:30:00Z"},
-        "secondary": {"usedPercent":68.1, "resetsAt":"2026-06-01T00:00:00Z"}
-      },
-      "planType": "pro",
-      "credits": 500
-    }
-  }
-}
+### Step 2: account/rateLimits/read
+
 ```
+→ {"jsonrpc":"2.0","id":2,"method":"account/rateLimits/read","params":{}}
+← {"id":2,"result":{"rateLimits":{"primary":{"usedPercent":33,"resetsAt":1779813312},"secondary":{"usedPercent":86,"resetsAt":1780201585},"planType":"plus"}}}
+```
+
+`resetsAt` 是 **Unix 时间戳**（Int 秒），不是 ISO 8601 字符串。
 
 ### 读取方式（readabilityHandler）
 
@@ -97,33 +92,33 @@ stdoutHandle.readabilityHandler = { handle in
 ## 数据模型
 
 ```swift
-struct CodexRateLimit: Codable {
+struct CodexRateLimitBucket: Codable {
     let usedPercent: Double
-    let resetsAt: String  // ISO 8601
+    let windowDurationMins: Int
+    let resetsAt: Int  // Unix timestamp (seconds)
 }
 
-struct CodexAccount: Codable {
-    let rateLimits: [String: CodexRateLimit]
+struct CodexRateLimits: Codable {
+    let primary: CodexRateLimitBucket
+    let secondary: CodexRateLimitBucket
     let planType: String
-    let credits: Int?
 }
 
-struct CodexInitResult: Codable {
-    let account: CodexAccount
+struct CodexRPCResult: Codable {
+    let rateLimits: CodexRateLimits
 }
 ```
 
 UI 展示用:
 ```swift
 struct CodexStatus {
-    let planName: String       // "Pro" / "Free" / "Team"
-    let primaryPercent: Double // 32.5 → "32%"
-    let primaryReset: String   // "2.3h" or "45m" 倒计时
-    let secondaryPercent: Double
-    let secondaryReset: String
-    let error: String?         // nil = 成功
+    let planName: String?        // "Plus" / "Pro" / nil=失败
+    let primaryPercent: Double?  // 33.0 → "33%"
+    let primaryReset: String?    // "2.3h" or "45m" 倒计时
+    let secondaryPercent: Double?
+    let secondaryReset: String?
+    let error: String?
 }
-```
 
 ## 窗口尺寸
 
@@ -159,7 +154,7 @@ struct CodexStatus {
 - A: 每次 refresh 启动新进程，读取后杀死
 - B: 启动后保持进程，refresh 时复用
 
-**决定**: 选 A（每次重新 spawn），因为 (1) 刷新间隔 30min，不值得 keep-alive 的复杂性；(2) app-server 进程 keep-alive 可能因 idle 退出，增加重连逻辑；(3) 2s 启动时间在 10s 超时内完全可接受；(4) 每次新进程保证状态干净，不会累积 stale 数据
+**决定**: 选 A（每次重新 spawn），因为 (1) 刷新间隔 30min，不值得 keep-alive；但实际上 app-server 需要两轮 RPC（initialize → account/rateLimits/read），不能关闭 stdin 直到两轮都完成。进程在 timeout 或成功/失败后 terminate。
 
 ### ADR-003: 窗口高度调整策略
 
