@@ -159,6 +159,11 @@ struct ContentView: View {
         .frame(width: 432, height: 300)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(state.focused ? .white.opacity(0.12) : .white.opacity(0.04), lineWidth: 0.5))
+        .contextMenu {
+            Button { fetcher.refresh() } label: { Label("刷新", systemImage: "arrow.clockwise") }
+            Divider()
+            Button(role: .destructive, action: { NSApplication.shared.terminate(nil) }) { Label("退出", systemImage: "xmark.circle") }
+        }
     }
     
     private var header: some View {
@@ -257,15 +262,8 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
         host.autoresizingMask = [.width, .height]; win.contentView = host
         host.wantsLayer = true; host.layer?.cornerRadius = 22; host.layer?.masksToBounds = true
         
-        // Native NSMenu — more reliable than SwiftUI .contextMenu on borderless windows.
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "刷新", action: #selector(menuRefresh), keyEquivalent: ""))
-        menu.addItem(.separator())
-        let q = NSMenuItem(title: "退出", action: #selector(menuQuit), keyEquivalent: "q")
-        q.keyEquivalentModifierMask = []
-        menu.addItem(q)
-        host.menu = menu
-        
+
+
         if let scr = NSScreen.main {
             let sf = scr.visibleFrame
             win.setFrameOrigin(NSPoint(x: round(sf.maxX - sz.width - 24), y: round(sf.maxY - sz.height - 24)))
