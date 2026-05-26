@@ -127,11 +127,19 @@ struct BarChartView: View {
     }
 }
 
-// MARK: - Window
+// MARK: - Window (forces key-ready even at desktop-icon level)
 
 class WidgetWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+    
+    /// Any mouse click makes this window key so buttons and menus work.
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown {
+            if !isKeyWindow { makeKey() }
+        }
+        super.sendEvent(event)
+    }
 }
 
 // MARK: - Content
@@ -159,11 +167,6 @@ struct ContentView: View {
         .frame(width: 432, height: 300)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(state.focused ? .white.opacity(0.12) : .white.opacity(0.04), lineWidth: 0.5))
-        .contextMenu {
-            Button { fetcher.refresh() } label: { Label("刷新", systemImage: "arrow.clockwise") }
-            Divider()
-            Button(role: .destructive, action: { NSApplication.shared.terminate(nil) }) { Label("退出", systemImage: "xmark.circle") }
-        }
     }
     
     private var header: some View {
@@ -262,8 +265,18 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
         host.autoresizingMask = [.width, .height]; win.contentView = host
         host.wantsLayer = true; host.layer?.cornerRadius = 22; host.layer?.masksToBounds = true
         
-
-
+        // Native right-click menu via NSView.menu — direct AppKit, no SwiftUI.
+        let menu = NSMenu()
+        let refreshItem = NSMenuItem(title: "刷新", action: #selector(menuRefresh), keyEquivalent: "")
+        refreshItem.target = self
+        menu.addItem(refreshItem)
+        menu.addItem(.separator())
+        let quitItem = NSMenuItem(title: "退出", action: #selector(menuQuit), keyEquivalent: "q")
+        quitItem.keyEquivalentModifierMask = []
+        quitItem.target = self
+        menu.addItem(quitItem)
+        host.menu = menu
+        
         if let scr = NSScreen.main {
             let sf = scr.visibleFrame
             win.setFrameOrigin(NSPoint(x: round(sf.maxX - sz.width - 24), y: round(sf.maxY - sz.height - 24)))
