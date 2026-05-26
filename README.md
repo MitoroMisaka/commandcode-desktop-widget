@@ -4,12 +4,14 @@
 
 Built with SwiftUI, inspired by Apple Screen Time's clean aesthetics. Glass-morphism, per-model bar charts, no Xcode required.
 
+Need Codex rate limits too? Use the Codex-enabled version: [Command Code + Codex Desktop Widget](https://github.com/MitoroMisaka/commandcode-codex-desktop-widget).
+
 ![screenshot](screenshot.jpg)
 
 ## Features
 
 - **Usage at a glance** — Total Cost / Tokens / Runs / Success Rate
-- **Per-model breakdown** — DeepSeek-V4-Pro, DeepSeek-V4-Flash, K2.5, K2.6, MiniMax, each with a distinct color
+- **Per-model breakdown** — DeepSeek-V4-Pro, DeepSeek-V4-Flash, Kimi-K2.5, Kimi-K2.6, MiniMax, each with a distinct color
 - **Hover tooltips** — See per-model detail per hour by hovering over a bar
 - **Glass materials** — ultraThinMaterial (when idle) / regularMaterial (when focused)
 - **Drag snapping** — 24px grid alignment with a white highlight border during drag
@@ -88,6 +90,7 @@ static let dbPath = NSHomeDirectory() + "/Library/Application Support/Firefox/Pr
 | `chillikai/claude-usage-widget` | macOS Menubar | Claude API |
 | `croustibat/ClaudeWidget` | macOS Desktop | Claude API |
 | `lkltxwd001/deepseek-desktop-widget` | macOS Desktop | DeepSeek API |
+| [`MitoroMisaka/commandcode-codex-desktop-widget`](https://github.com/MitoroMisaka/commandcode-codex-desktop-widget) | macOS Desktop | Command Code + Codex |
 | **This project** | macOS Desktop | **Command Code** |
 
 This is the first desktop usage monitor for Command Code.
