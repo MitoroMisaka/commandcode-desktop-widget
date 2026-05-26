@@ -158,13 +158,14 @@ struct ContentView: View {
                 chartContent
                 Spacer(minLength: 0)
                 footer
+                codexRow
             }.padding(16)
             
             if state.dragging {
                 RoundedRectangle(cornerRadius:22).strokeBorder(.white.opacity(0.4), lineWidth: 2.5).padding(1).allowsHitTesting(false)
             }
         }
-        .frame(width: 432, height: 300)
+        .frame(width: 432, height: 340)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(state.focused ? .white.opacity(0.12) : .white.opacity(0.04), lineWidth: 0.5))
     }
@@ -227,6 +228,61 @@ struct ContentView: View {
             Text(l).font(.system(size: 9, weight: .medium)).foregroundColor(.secondary.opacity(0.6)).textCase(.uppercase).tracking(0.4)
         }
     }
+
+    private var codexRow: some View {
+        Group {
+            if let cs = fetcher.codexStatus {
+                if let plan = cs.planName {
+                    HStack(spacing: 0) {
+                        Spacer()
+                        Image(systemName: "cpu")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.5))
+                        Text(" Codex \(plan) ")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.7))
+                        Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 16)
+                        if let pp = cs.primaryPercent {
+                            Text("5h: \(String(format: "%.0f", pp))%")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundColor(pp > 80 ? .orange : .secondary.opacity(0.8))
+                            if let pr = cs.primaryReset {
+                                Text(" (\(pr))")
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(.secondary.opacity(0.45))
+                            }
+                        }
+                        Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 16)
+                        if let sp = cs.secondaryPercent {
+                            Text("7d: \(String(format: "%.0f", sp))%")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundColor(sp > 80 ? .orange : .secondary.opacity(0.8))
+                            if let sr = cs.secondaryReset {
+                                Text(" (\(sr))")
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(.secondary.opacity(0.45))
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 6)
+                } else {
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Image(systemName: "cpu")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.3))
+                        Text(cs.error ?? "获取失败")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary.opacity(0.35))
+                        Spacer()
+                    }
+                    .padding(.top, 6)
+                }
+            }
+        }
+    }
+
     private func fmt(_ n: Int) -> String {
         n>=1_000_000 ? String(format:"%.1fM",Double(n)/1_000_000) : n>=1_000 ? String(format:"%.1fK",Double(n)/1_000) : "\(n)"
     }
@@ -250,7 +306,7 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
     private static var _d: WidgetAppDelegate?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let sz = CGSize(width: 432, height: 300)
+        let sz = CGSize(width: 432, height: 340)
         let win = WidgetWindow(contentRect: NSRect(origin: .zero, size: sz),
                            styleMask: [.borderless, .fullSizeContentView],
                            backing: .buffered, defer: false)
