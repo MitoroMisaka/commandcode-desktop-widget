@@ -93,3 +93,75 @@ func colorFor(_ i: Int) -> (Double,Double,Double) {
     case 4: return (251,146,60); default: return (161,161,170)
     }
 }
+
+// MARK: - Codex
+
+struct CodexRateLimit: Codable {
+    let usedPercent: Double
+    let resetsAt: String
+}
+
+struct CodexAccount: Codable {
+    let rateLimits: [String: CodexRateLimit]
+    let planType: String
+    let credits: Int?
+}
+
+struct CodexInitResult: Codable {
+    let account: CodexAccount
+}
+
+struct CodexStatus {
+    let planName: String?
+    let primaryPercent: Double?
+    let primaryReset: String?
+    let secondaryPercent: Double?
+    let secondaryReset: String?
+    let error: String?
+
+    static func from(rpcResult: CodexInitResult) -> CodexStatus {
+        let account = rpcResult.account
+        let plan = account.planType.prefix(1).uppercased() + account.planType.dropFirst()
+
+        let primary = account.rateLimits["primary"]
+        let secondary = account.rateLimits["secondary"]
+
+        func countdown(from isoString: String?) -> String? {
+            guard let isoString else { return nil }
+            let fmt = ISO8601DateFormatter()
+            fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let resetDate = fmt.date(from: isoString)
+                ?? ISO8601DateFormatter().date(from: isoString)
+            guard let resetDate else { return nil }
+            let remaining = resetDate.timeIntervalSinceNow
+            guard remaining > 0 else { return "0m" }
+            let hours = remaining / 3600
+            if hours >= 1 {
+                return String(format: "%.1fh", hours)
+            } else {
+                let minutes = Int(remaining / 60)
+                return "\(minutes)m"
+            }
+        }
+
+        return CodexStatus(
+            planName: plan,
+            primaryPercent: primary?.usedPercent,
+            primaryReset: countdown(from: primary?.resetsAt),
+            secondaryPercent: secondary?.usedPercent,
+            secondaryReset: countdown(from: secondary?.resetsAt),
+            error: nil
+        )
+    }
+
+    static func failed(_ msg: String) -> CodexStatus {
+        CodexStatus(
+            planName: nil,
+            primaryPercent: nil,
+            primaryReset: nil,
+            secondaryPercent: nil,
+            secondaryReset: nil,
+            error: msg
+        )
+    }
+}
