@@ -236,31 +236,31 @@ struct ContentView: View {
                     HStack(spacing: 0) {
                         Spacer()
                         Image(systemName: "cpu")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary.opacity(0.5))
                         Text(" Codex \(plan) ")
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.secondary.opacity(0.7))
-                        Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 16)
+                        Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 18)
                         if let pp = cs.primaryPercent {
-                            Text("5h: \(String(format: "%.0f", pp))%")
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                .foregroundColor(pp > 80 ? .orange : .secondary.opacity(0.8))
+                            Text("5h剩: \(String(format: "%.0f", pp))%")
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundColor(pp < 20 ? .orange : .primary)
                             if let pr = cs.primaryReset {
                                 Text(" (\(pr))")
-                                    .font(.system(size: 9, design: .monospaced))
-                                    .foregroundColor(.secondary.opacity(0.45))
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundColor(.primary.opacity(0.6))
                             }
                         }
-                        Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 16)
+                        Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 18)
                         if let sp = cs.secondaryPercent {
-                            Text("7d: \(String(format: "%.0f", sp))%")
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                .foregroundColor(sp > 80 ? .orange : .secondary.opacity(0.8))
+                            Text("7d剩: \(String(format: "%.0f", sp))%")
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundColor(sp < 20 ? .orange : .primary)
                             if let sr = cs.secondaryReset {
                                 Text(" (\(sr))")
-                                    .font(.system(size: 9, design: .monospaced))
-                                    .foregroundColor(.secondary.opacity(0.45))
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundColor(.primary.opacity(0.6))
                             }
                         }
                         Spacer()
@@ -270,10 +270,10 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Spacer()
                         Image(systemName: "cpu")
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.secondary.opacity(0.3))
                         Text(cs.error ?? "获取失败")
-                            .font(.system(size: 10))
+                            .font(.system(size: 11))
                             .foregroundColor(.secondary.opacity(0.35))
                         Spacer()
                     }

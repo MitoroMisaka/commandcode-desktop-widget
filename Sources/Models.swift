@@ -139,9 +139,9 @@ struct CodexStatus {
 
         return CodexStatus(
             planName: plan,
-            primaryPercent: rateLimits.primary.usedPercent,
+            primaryPercent: 100 - rateLimits.primary.usedPercent,
             primaryReset: countdown(from: rateLimits.primary.resetsAt),
-            secondaryPercent: rateLimits.secondary.usedPercent,
+            secondaryPercent: 100 - rateLimits.secondary.usedPercent,
             secondaryReset: countdown(from: rateLimits.secondary.resetsAt),
             error: nil
         )
