@@ -243,9 +243,12 @@ struct ContentView: View {
                             .foregroundColor(.secondary.opacity(0.7))
                         Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 18)
                         if let pp = cs.primaryPercent {
-                            Text("5h剩: \(String(format: "%.0f", pp))%")
-                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                .foregroundColor(pp < 20 ? .orange : .primary)
+                            HStack(spacing: 0) {
+                                Text("5h: ").foregroundColor(.secondary.opacity(0.7))
+                                Text("\(String(format: "%.0f", pp))%")
+                                    .foregroundColor(.primary)
+                            }
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
                             if let pr = cs.primaryReset {
                                 Text(" (\(pr))")
                                     .font(.system(size: 10, design: .monospaced))
@@ -254,9 +257,12 @@ struct ContentView: View {
                         }
                         Rectangle().fill(.white.opacity(0.06)).frame(width: 1, height: 18)
                         if let sp = cs.secondaryPercent {
-                            Text("7d剩: \(String(format: "%.0f", sp))%")
-                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                .foregroundColor(sp < 20 ? .orange : .primary)
+                            HStack(spacing: 0) {
+                                Text("7d: ").foregroundColor(.secondary.opacity(0.7))
+                                Text("\(String(format: "%.0f", sp))%")
+                                    .foregroundColor(.primary)
+                            }
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
                             if let sr = cs.secondaryReset {
                                 Text(" (\(sr))")
                                     .font(.system(size: 10, design: .monospaced))
