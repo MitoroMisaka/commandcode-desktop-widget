@@ -133,12 +133,20 @@ class WidgetWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
     
-    /// Any mouse click makes this window key so buttons and menus work.
     override func sendEvent(_ event: NSEvent) {
         if event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown {
-            if !isKeyWindow { makeKey() }
+            if !isKeyWindow { makeKeyAndOrderFront(nil) }
         }
         super.sendEvent(event)
+    }
+}
+
+final class WidgetHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.makeKeyAndOrderFront(nil)
+        super.mouseDown(with: event)
     }
 }
 
@@ -257,26 +265,25 @@ class WidgetAppDelegate: NSObject, NSApplicationDelegate {
         win.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
         win.isOpaque = false; win.backgroundColor = .clear; win.hasShadow = false
         win.isMovableByWindowBackground = true; win.isMovable = true
-        win.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        win.collectionBehavior = [.canJoinAllSpaces]
         win.minSize = sz; win.maxSize = sz; ww = win
         
         let view = ContentView().environmentObject(fetcher).environmentObject(state)
-        let host = NSHostingView(rootView: view); host.frame.size = sz
+        let host = WidgetHostingView(rootView: view); host.frame.size = sz
         host.autoresizingMask = [.width, .height]; win.contentView = host
         host.wantsLayer = true; host.layer?.cornerRadius = 22; host.layer?.masksToBounds = true
-        
-        // Native right-click menu via NSView.menu — direct AppKit, no SwiftUI.
+
         let menu = NSMenu()
-        let refreshItem = NSMenuItem(title: "刷新", action: #selector(menuRefresh), keyEquivalent: "")
+        let refreshItem = NSMenuItem(title: "Refresh", action: #selector(menuRefresh), keyEquivalent: "")
         refreshItem.target = self
         menu.addItem(refreshItem)
         menu.addItem(.separator())
-        let quitItem = NSMenuItem(title: "退出", action: #selector(menuQuit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit", action: #selector(menuQuit), keyEquivalent: "q")
         quitItem.keyEquivalentModifierMask = []
         quitItem.target = self
         menu.addItem(quitItem)
         host.menu = menu
-        
+
         if let scr = NSScreen.main {
             let sf = scr.visibleFrame
             win.setFrameOrigin(NSPoint(x: round(sf.maxX - sz.width - 24), y: round(sf.maxY - sz.height - 24)))

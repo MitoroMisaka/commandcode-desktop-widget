@@ -9,6 +9,8 @@ class DataFetcher: ObservableObject {
     @Published var loading = false
     @Published var error: String?
     private var timer: Timer?
+    private var fetchTask: Task<Void, Never>?
+    private var loadingDeadline: Date?
     
     private static let session: URLSession = {
         let c = URLSessionConfiguration.default
@@ -34,23 +36,30 @@ class DataFetcher: ObservableObject {
         }
     }
     func stop() { timer?.invalidate() }
-    func refresh() { Task { await fetch() } }
     
-    private func fetch() async {
-        guard !loading else { return }
-        loading = true; error = nil
-        // defer guarantees loading=false even on cancellation/timeout.
-        defer { loading = false }
+    func refresh() {
+        fetchTask?.cancel()
+        fetchTask = Task { [weak self] in
+            guard let self else { return }
+            do { try await self._fetch() }
+            catch { NSLog("[DBG] fetch() threw: \(error)") }
+        }
+    }
+    
+    private func _fetch() async throws {
+        guard !loading || loadingDeadline.map({ Date().timeIntervalSince($0) > 35 }) ?? true else { return }
+        loading = true; error = nil; loadingDeadline = Date()
+        defer { loading = false; loadingDeadline = nil }
         
         guard let tok = await TokenExtractor.extract() else {
-            error = "请登录 Firefox → Command Code"; return
+            error = "Sign in with Firefox → Command Code"; return
         }
         
         let result = await withTimeout(25) { await self.fetchData(tok) }
         if Task.isCancelled { return }
         
         switch result {
-        case .timeout: error = "网络超时"
+        case .timeout: error = "Network timeout"
         case .success(let (h, s, c)):
             if let h = h { hourly = h }
             if let s = s { summary = s }
